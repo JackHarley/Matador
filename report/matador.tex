@@ -40,8 +40,9 @@
 \begin{document}
 	\maketitle
 	
-	\textbf{YouTube Demo:} \url{https://www.youtube.com/watch?v=c0bWx8lWbeI} (make sure to watch in 1080p HD)\\
-	\textbf{GitHub:} \url{https://github.com/JackHarley/Matador}
+	\textbf{YouTube Demo:} ~~~~~~~~~~~~~\url{https://www.youtube.com/watch?v=c0bWx8lWbeI} (watch in 1080p HD)\\
+	\textbf{GitHub:} ~~~~~~~~~~~~~~~~~~~~~~~~~\url{https://github.com/JackHarley/Matador}\\
+	\textbf{Binaries for Download:} ~~~\url{https://github.com/JackHarley/Matador/releases}
 	
 	\tableofcontents
 	
@@ -59,7 +60,7 @@
 		
 		Matador is a simple system which allows you to generate an "identity" for yourself (an RSA-2048 public-private keypair) and then add "friends" public keys to your database. You can encrypt messages via the command line interface, and your friends will be able to decrypt the ciphertext using their private keys. You can remove "friends" from your database at any time, and any future messages you encrypt will not be able to be decrypted by them.
 		
-		Matador is a fully production ready application. It could be used in a scenario where a group wishes to transmit messages to each other through an existing social media platform such as Facebook. Each user would generate an identity, post their public key on the social media site or transmit it in some other way, and then after importing all their friends' public keys they could then encrypt messages to post publicly, knowing that they are not readable to unauthorized viewers.
+		Matador is a fully production ready application. It could be used in a scenario where a group wishes to transmit messages to each other through an existing social media platform such as Facebook. Each user would generate an identity, post their public key on the social media site or transmit it in some other way, and then after importing all their friends' public keys they could then encrypt messages to post publicly, safe in the knowledge that they are unreadable to unauthorized viewers.
 		
 		The full source code is included as listings in the appendix, and is also available on GitHub here: \url{https://github.com/JackHarley/Matador}.
 	
@@ -81,9 +82,9 @@
 		\end{enumerate}
 	
 	\subsection{Encryption Technologies/Libraries}
-		Matador utilizes the Go languages inbuilt encryption libraries to perform all of its cryptography. These libraries are one of GoLang's strong points and part of the reason I chose the language for this assignment. By using built-in, well-vetted libraries we can be certain there are no amateurish errors that could open us to an attack. This is in stark contrast to something like the Javascript ecosystem, where developers tend to use whatever NPM library comes up first on their Google search, many of which have dependency chains too long to properly analyze, with possible security-critical hidden bugs beneath the depths.
+		Matador utilizes GoLang's built-in encryption libraries to perform all of its cryptography. These libraries are one of GoLang's strong points and part of the reason I chose the language for this assignment. By using built-in, well-vetted libraries we can be certain there are no amateurish errors that could open us to an attack. This is in stark contrast to something like the Javascript ecosystem, where developers tend to use whatever NPM library comes up first on their Google search, many of which have dependency chains too long to properly analyse, with possible security-critical hidden bugs beneath the depths.
 		
-		We utilize both symmetric and asymmetric encryption in Matador. For symmetric we use the well-known Advanced Encryption Standard (AES) with a 256 bit keysize. We use the Galois/Counter Mode of operation when operating the cipher. Together this combination is commonly referred to as AES-GCM 256.
+		We utilize both symmetric and asymmetric encryption in Matador. For symmetric we use the well-known Advanced Encryption Standard (AES) with a 256 bit key-size We use the Galois/Counter Mode of operation when operating the cipher. Together this combination is commonly referred to as AES-GCM 256.
 		
 		For asymmetric encryption we use RSA-2048. RSA has a couple of notable drawbacks, for us the principal one is the size of the outputs it generates, which are always 2048 bits (256 bytes). It will become apparent later on why this can be an issue when a user has a large friends list.
 	
@@ -92,7 +93,7 @@
 		
 		You can also try out the program yourself! I have published it on GitHub here: \url{https://github.com/JackHarley/Matador}
 		
-		There are Windows and Linux binaries available on the releases page here: TODO. Simply download the appropriate binary and execute it in a command line environment.
+		There are Windows x64 and Linux x64 binaries available on the releases page here: \url{https://github.com/JackHarley/Matador/releases}. Simply download the appropriate binary and execute it in a command line environment.
 	
 	\newpage
 	
@@ -121,7 +122,7 @@ DRV2sClyxXZCbbaxi2Yx3pJMG0r0McfF0JzmURe7ErdTz/Hrvhpo/Ga+fLSi/0Dd
 -----END MATADOR ENCRYPTED MESSAGE-----
 		\end{lstlisting}
 		
-		The format will instantly be familiar to anyone used to dealing with cryptography. The message is in a PEM encoded format, with an ASN.1 datastream inside. Let's take a look inside the ASN.1 data. We can dump the message into an ASN.1 decoder like that available here to start: \url{https://lapo.it/asn1js/}:
+		The format will instantly be familiar to anyone used to dealing with cryptography. The message is in a PEM encoded format, with ASN.1 data inside. Let's take a look inside the ASN.1 data. We can dump the message into an ASN.1 decoder like that available here to start: \url{https://lapo.it/asn1js/}:
 		
 		\includegraphics[width=15cm]{encryptedmessageasn1.png}
 		
@@ -143,7 +144,7 @@ DRV2sClyxXZCbbaxi2Yx3pJMG0r0McfF0JzmURe7ErdTz/Hrvhpo/Ga+fLSi/0Dd
 		\newpage
 		
 	\subsection{Public and Private Keys}
-		RSA public and private keys are stored in PKCS1 format in a PEM file. When generating an identity, two files are created for the user (RSA public and RSA private keyfiles). Examples are shown below:
+		RSA public and private keys are stored in PKCS1 format in a PEM file. When generating an identity, two files are created for the user (RSA public and RSA private key-files). Examples are shown below:
 		
 		\textbf{private\_key.pem:}
 		
