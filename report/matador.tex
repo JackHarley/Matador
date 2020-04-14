@@ -1,0 +1,271 @@
+\documentclass{article}[12pt]
+
+\usepackage[margin=0.7in]{geometry}
+\usepackage{titling}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\definecolor{lightblue}{RGB}{0,130,186}
+\definecolor{darkgreen}{RGB}{0,114,0}
+\definecolor{darkpurple}{RGB}{125,0,183}
+
+\lstset{
+	tabsize=4,
+	basicstyle=\color{black}\footnotesize\ttfamily,
+	keywordstyle=\color{blue}\footnotesize\ttfamily, % style for keywords
+	identifierstyle=\color{purple}\footnotesize\ttfamily,
+	commentstyle=\color{lightblue}\footnotesize\ttfamily,
+	numbers=left, % where to put the line-numbers
+	numberstyle=\footnotesize\ttfamily, % the size of the fonts that are used for the line-numbers
+	showstringspaces=false
+}
+
+\hypersetup{
+	colorlinks,
+	citecolor=black,
+	filecolor=black,
+	linkcolor=black,
+	urlcolor=black
+}
+
+\setlength{\droptitle}{0em}
+\setlength{\parindent}{0cm}
+
+\title{CSU34031 Advanced Telecommunications\\Project \#2\\~\\"Matador"\\Multi-User Secure Messaging System\\~}
+\author{Jack Harley jharley@tcd.ie | Student No. 16317123}
+\date{April 2020}
+
+\begin{document}
+	\maketitle
+	
+	\textbf{YouTube Demo:} \url{https://www.youtube.com/watch?v=c0bWx8lWbeI} (make sure to watch in 1080p HD)\\
+	\textbf{GitHub:} \url{https://github.com/JackHarley/Matador}
+	
+	\tableofcontents
+	
+	\newpage
+	
+	\setlength{\parskip}{1em}
+		
+	\section{Introduction}
+	
+		\includegraphics[width=18cm]{intro.png}
+		
+		I have built my solution in GoLang. GoLang is a statically typed, compiled programming language designed at Google, it is syntactically similar to C, but with extra features including memory safety, garbage collection, structural typing.
+		
+		My system is named Matador, in reference to a programme that is something of its opposite- the NSA's BULLRUN global cryptanalysis programme. Provided the NSA has not in fact secretly developed a quantum computer with enough qubits to break RSA-2048, Matador should hopefully be resistant to their abilities. Alas we have no way of knowing if they may have discovered another vulnerability in RSA/AES but I personally do not believe they have.
+		
+		Matador is a simple system which allows you to generate an "identity" for yourself (an RSA-2048 public-private keypair) and then add "friends" public keys to your database. You can encrypt messages via the command line interface, and your friends will be able to decrypt the ciphertext using their private keys. You can remove "friends" from your database at any time, and any future messages you encrypt will not be able to be decrypted by them.
+		
+		Matador is a fully production ready application. It could be used in a scenario where a group wishes to transmit messages to each other through an existing social media platform such as Facebook. Each user would generate an identity, post their public key on the social media site or transmit it in some other way, and then after importing all their friends' public keys they could then encrypt messages to post publicly, knowing that they are not readable to unauthorized viewers.
+		
+		The full source code is included as listings in the appendix, and is also available on GitHub here: \url{https://github.com/JackHarley/Matador}.
+	
+	\newpage
+	
+	\subsection{Codebase Structure}
+		The project consists of 4 Go source files all of which are in the main package, as is typical when structuring small GoLang programs. It would in fact be possible to merge all the code into a single file with little to no changes but this would make the project more difficult to navigate and comprehend.
+		
+		The 4 main source files are:
+		
+		\begin{enumerate}
+			\item \textbf{main.go} - This is home to the entrance routine of the program, it has very little functionality. It can display help text when no command is supplied, and when a command is supplied it calls the relevant function from one of the other files.
+			
+			\item \textbf{identity.go} - Implements functionality relating to the local user's identity. It can generate a new identity with the init command (generates an RSA-2048 public-private keypair) and retrieve the user's private and public keys, and the special fingerprint of the public key which we use to identify it quickly.
+			
+			\item \textbf{friends.go} - Implements functionality relating to the public keys of the user's friend group. Handles storing the friendly public keys in a simple JSON file database along with their fingerprints and the user-entered name for each of them. Allows the user to add, delete and list the entries in the database.
+			
+			\item \textbf{message.go} - Implements the actual encryption/decryption of messages for transmission.
+		\end{enumerate}
+	
+	\subsection{Encryption Technologies/Libraries}
+		Matador utilizes the Go languages inbuilt encryption libraries to perform all of its cryptography. These libraries are one of GoLang's strong points and part of the reason I chose the language for this assignment. By using built-in, well-vetted libraries we can be certain there are no amateurish errors that could open us to an attack. This is in stark contrast to something like the Javascript ecosystem, where developers tend to use whatever NPM library comes up first on their Google search, many of which have dependency chains too long to properly analyze, with possible security-critical hidden bugs beneath the depths.
+		
+		We utilize both symmetric and asymmetric encryption in Matador. For symmetric we use the well-known Advanced Encryption Standard (AES) with a 256 bit keysize. We use the Galois/Counter Mode of operation when operating the cipher. Together this combination is commonly referred to as AES-GCM 256.
+		
+		For asymmetric encryption we use RSA-2048. RSA has a couple of notable drawbacks, for us the principal one is the size of the outputs it generates, which are always 2048 bits (256 bytes). It will become apparent later on why this can be an issue when a user has a large friends list.
+	
+	\section{Usage/Demo}
+		Please watch the following short YouTube video to see a full demonstration of Matador's functionality: \url{https://www.youtube.com/watch?v=c0bWx8lWbeI}
+		
+		You can also try out the program yourself! I have published it on GitHub here: \url{https://github.com/JackHarley/Matador}
+		
+		There are Windows and Linux binaries available on the releases page here: TODO. Simply download the appropriate binary and execute it in a command line environment.
+	
+	\newpage
+	
+	\section{Data Formats/Protocol}
+	
+	\subsection{Encrypted Message Format}
+		A Matador encrypted message looks like the following:
+		
+		\begin{lstlisting}[language={}]
+-----BEGIN MATADOR ENCRYPTED MESSAGE-----
+MIICzAQMv5uZlq8UXVxMK1q8BCRGelhIvqA7vAvetX1tsKgPs3y4B/7VvYpC3G0L
+5vqOvegi2twwggKUMIIBRhNAMzJhODEwYjg0MTdmZDE3NDUxZDRiMzQxNGYwMzI3
+ODNhZjI5NzI4NTAwMDJhOGIyM2Q3OTRlYWNlYjY2N2JjZASCAQAATL8u+OrtPDE3
+0W+O9Frx+hhhXxt0cxlEAaxyduIoK0h2Lt1l1M4PJPccsQUHh5tpuA2oVi5qU+1X
+LoF4SEdlAMbJeJu5MMINnl7kxQV3iyDOTvLyM4RZuYC9PLTBLQmlmwFaUStjZgDb
+2TnJXM+1dXYOB2VzLcxl5ecW8dB+tpB0kaXQyUkAay8Fe8824nYf2ep7sTTCkaTs
+quDVsmzDlIBfg94t4BFHNu/MdK3KDN2X3xmWzoB7iIffvgBZQK/nqTpAG/CdvBvO
+MZHwkx+67Rg6ssIPFGCVP2YI3hvUF4FXInncbSYSoJ3iDzEjLJPj2Ca+IRT+zSct
+6uazymlNMIIBRhNANTgzZjFhODA2MDU3YTY0M2M2NzQxYzdlOTI5Y2QyNzQ0MjVj
+NjRhNmIzYjBiYmU1NTgyY2Y3NzMyNWY1N2FhNwSCAQCc60whPvgJxwLruQ/xbx88
+Rz6KscHmBB8b0x7/RrTwAcnJDcbSFUQYJRjNzSfbK+A35RHztrr7itmf0IOwrVuK
+vdBQIKclZ5aut9ezI6d3jgIR2EKgd96ZM+jY1VbHrFKcG83fUO0WMeRT8TTDtPZN
+7aF0bnMdfLTOEMqCWfFjRSr6L4T9dTxqdLLeZGZZrj8dDX71YUb/BR3pVR4EWxow
+UadpTB0ZM2EWqtUite/DUL+Lik4SoAlRsQQJn9gruMSCBHO+ZraDxSnLhUuShrpP
+DRV2sClyxXZCbbaxi2Yx3pJMG0r0McfF0JzmURe7ErdTz/Hrvhpo/Ga+fLSi/0Dd
+-----END MATADOR ENCRYPTED MESSAGE-----
+		\end{lstlisting}
+		
+		The format will instantly be familiar to anyone used to dealing with cryptography. The message is in a PEM encoded format, with an ASN.1 datastream inside. Let's take a look inside the ASN.1 data. We can dump the message into an ASN.1 decoder like that available here to start: \url{https://lapo.it/asn1js/}:
+		
+		\includegraphics[width=15cm]{encryptedmessageasn1.png}
+		
+		Here's what you're seeing above:
+		
+		\begin{itemize}
+			\item The first octet string (12 bytes) is the unique nonce used for the AES-GCM 256 encryption.
+			\item The second octet string (36 bytes) is the ciphertext of the encrypted message.
+			\item We then have a list of objects each containing two elements, each object represents a user with permission to decrypt the message:
+			\begin{itemize}
+				\item The printable string is a hex encoded SHA256 fingerprint of the public key (further detail on how this is calculated will be discussed later).
+				\item The octet string is the ciphertext of the RSA encrypted session key.
+			\end{itemize}
+		\end{itemize}
+	
+		If we were the user in receipt of this encrypted message we would need to fingerprint our own public key and compare it against each of the session key objects until we find a match. At that point we can use our RSA private key to decrypt the AES-256 session key. We can then use the session key in combination with the plaintext nonce to decrypt the main message ciphertext.
+		
+		Earlier I mentioned a disadvantage of RSA-2048 being that the ciphertext is always 2048 bits (256 bytes) long (when used securely with correct padding). This disadvantage rears its head here. For every user that has access to the message, there is an extra 256+32 bytes added to the transmission. This can result in small single sentence messages becoming extremely long even when encoded with ASN.1/PEM (which results in base64 encoding), and with enough users involved you may start hitting character limits on social media services. Using an elliptic curve based asymmetric solution could shorten these outputs however the libraries to do so are not as mature in GoLang, and so I opted against it.
+		\newpage
+		
+	\subsection{Public and Private Keys}
+		RSA public and private keys are stored in PKCS1 format in a PEM file. When generating an identity, two files are created for the user (RSA public and RSA private keyfiles). Examples are shown below:
+		
+		\textbf{private\_key.pem:}
+		
+		\begin{lstlisting}[language={}]
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEAvnKQ8/MbCc7bny93uDZjkIUc8vGNQrf9BZkoovLseOUn1TZ4
+1dWYEcyIHgcrxgHRRtnPrWr3DuW7IGUFQAZ+DZYbyh16BNEPYyY0hIG9TlCKL+1P
+IFqY5iDV5nHx0jDKQjR5DBoM9jVwVyxRe5UKhmxZzWVWlBZlUbdKCi7Ns0p3AjEN
+7tw0BwvkbHYEElIfy0wu5Y1+6+b46a271/rzmIqz40t8UpMD/sb5evyPnNtYtEGk
+mK0E2Ozd+5V/1ywkjT2DUN4v9R30nLkxiGTFc9RxBCuwbp8fhqRWhUZJn/cvUyGi
+gLYvIxJPZ5139T+lUFSb1eFavDG4CxbejoA6vwIDAQABAoIBACCX2tblNCtpi4yi
+wwpzxHZnUZ0CWfqhIlxi6eF5UZ8fGMIUoHl4JJ5nMqRw9bzdcsN9Y116gO27w1q3
+7z4V3lzU48yjXs6UON3vG+3RhmRwxDWPl4sh9ijsVa8qsQgX8YWDFXRMwQsh+ifx
+HcDYsQRwZq4QOdD+RDjH9ZPojquwNx+JyDUn7wfVT6oxtZ7AERWrUxE2R5Hy/1WQ
+zP/KJzvGpY2jjh02e0LbKCz7Z+0Eg3hq87aEGjoRo3BjEA71I3USxO1p5qYf+61g
+R7H4YdCo5t9Oy70yg8tUKI0CZlOXraDE6lUipso6AzMEaAlBk6E1NbEtC+g31tUJ
+Fo2LfoECgYEA0ZUJdlxgcKushe7uC4CrPpMLnpFvB4y/MLXAHf8qWhclS4LkSXZ/
+yTbHtqBcVfcfwpDVKiBhhOmJFP6HVgOURakgiUB54PqLxTINP+030CUPzPdGxf0X
+U7iUREscSYksX3adLeMxiejCoBDrFn10by62he8B5ZukyA+hcSZZq2UCgYEA6KCg
+S0VssdU/bRv+TDAEAfTGBl1mkvBCxultAqBpdHxU8ZdW3Kgc5XpuByRQItAtJnWg
+ygxifWumTppOD9oMT94gxALoDODbLr8fmBUl7uSeH6nMMhzYeyWHCRIbroOqSC6g
+r+mMCtKUCODuYp3ra2LJBVKKzKc4mYDBfPVu9VMCgYBt9ROR1cWDV46cdk7OGiO+
+IMfn2cW24FEu7SxukIFX4uzeQT4kjNdeai890cSgFZfELNip0XNYmG4jZab7qcUR
+Bzrax8kqEElknG33LC4sNkWj89hd5/tlIWIosn+U1TNCoqi0eo5zHHuAH2A33HpK
+GugIPO1x2ccKb6j0BHrnQQKBgQC/fdn1nESJbv0zF+QRW0UxRwjrnF8ffd+6VdSC
+YQHt/Zr+9JFwOoLu9AU2o9HDlpJUImglamR40fCoq6Sur9OKu1NFhw716vMCXBnp
+2x7KtC7l6aRJbC1X0eCCuwFGeuPlX1yu8hVxoz5wwJf7Xfu4/ixz0SqopM6WrcKY
+1oBsOQKBgQDP1Ypfgm/1qiEPxYGMJhV0wXaWlFY1JmWAnDPhX6GT3YIPugtKXPGM
+3xJCFteK8VA8elJ299fuLAudOy3Be5U17wLyBWLjW74YfAdz4VJEKrymjKfbXy4M
+jGQTM+tyCnj/wkrCNg9RMvOA0SccfNFIbZihMWvXGcmlvzeBkeeoJw==
+-----END RSA PRIVATE KEY-----
+		\end{lstlisting}
+		
+		\textbf{alice.pub.pem:}
+		
+		\begin{lstlisting}[language={}]
+-----BEGIN RSA PUBLIC KEY-----
+MIIBCgKCAQEAvnKQ8/MbCc7bny93uDZjkIUc8vGNQrf9BZkoovLseOUn1TZ41dWY
+EcyIHgcrxgHRRtnPrWr3DuW7IGUFQAZ+DZYbyh16BNEPYyY0hIG9TlCKL+1PIFqY
+5iDV5nHx0jDKQjR5DBoM9jVwVyxRe5UKhmxZzWVWlBZlUbdKCi7Ns0p3AjEN7tw0
+BwvkbHYEElIfy0wu5Y1+6+b46a271/rzmIqz40t8UpMD/sb5evyPnNtYtEGkmK0E
+2Ozd+5V/1ywkjT2DUN4v9R30nLkxiGTFc9RxBCuwbp8fhqRWhUZJn/cvUyGigLYv
+IxJPZ5139T+lUFSb1eFavDG4CxbejoA6vwIDAQAB
+-----END RSA PUBLIC KEY-----
+		\end{lstlisting}
+	\newpage
+	
+	\section{Processes/Functionality}
+		\subsection{Message Encryption}
+			This is the precise process followed to encrypt a message, the code to do so can be found in the encryptMessage() function in message.go. This process is executed when the command \textbf{matador encrypt} is issued.
+			
+			\begin{enumerate}
+				\item Read an input message from the user, terminate of the message is indication by a single . on a new line, this is a common way of indicating termination used in Linux mail programs such as postfix.
+				\item Generate 256 random bits, this will be the session key
+				\item Generate 96 random bits, this will be the nonce. \textbf{N.B.} Technically a unique nonce is not required since we never reuse the session key (we could just use a hard-coded static nonce/zero nonce), however we will use one anyway since they are standard practice. When attempting to use a zero nonce the Go implementation refused to encrypt the data, so the safest thing to do is simply do what the developers expect you to. The additional data that has to be transmitted with the message is negligible compared to the size of the multiple copies of the asymmetrically encrypted session key.
+				\item Encrypt the input message using AES in Galois/Counter-Mode with the 256 bit key and 96 bit nonce we generated.
+				\item Retrieve the RSA public keys of all friends in the database, for each key:
+					\item Encrypt the session key with the RSA public key.
+					\item Append the public key's fingerprint and the asymmetrically encrypted session key to a list in the encrypted message structure.
+				\item Encode the encrypted message structure containing the nonce, encrypted message and encrypted session keys with fingerprints into ASN.1 and further encode that into the PEM format.
+				\item Output the PEM text to the console for the user to send.
+			\end{enumerate}
+		
+		\subsection{Message Decryption}
+			This is the precise process followed to decrypt a message, the code to do so can be found in the decryptMessage() function in message.go. This process is executed when the command \textbf{matador decrypt} is issued.
+			
+			\begin{enumerate}
+				\item Read an input encrypted message PEM from the user, the program understands termination by watching for the PEM ---END--- line.
+				\item Decode the PEM, giving an ASN.1 encoded byte stream
+				\item Decode the ASN.1 into our EncryptedMessage structure
+				\item Load the user's private key and calculate its public fingerprint.
+				\item Compare the fingerprint to the fingerprints attached to each copy of the encrypted session key. If a match is found, we can proceed with decryption using that copy. If no match is found, the user has not been authorized to decrypt the message and the program will abort.
+				\item Decrypt the session key using the RSA private key.
+				\item Use the session key and the nonce from the input encrypted message to decrypt the message.
+				\item Output the decrypted message to the console.
+			\end{enumerate}
+		
+		\subsection{Public Key Fingerprint Calculation}
+			The public key fingerprints are not important for maintaining security, they are simply a convenience factor allowing the receiving user to immediately know if there is a copy of the session key available that they should be able to decrypt.
+			
+			The fingerprinting could in fact be entirely removed and the program could instead attempt to decrypt every bundled session key, however this would be computationally wasteful, particularly when a message has been sent for use by a large number of users.
+			
+			This is the code used to perform the fingerprinting:
+			
+			\begin{lstlisting}
+func getPublicFingerprint() string {
+	publicKey := getPublicKey()
+	fingerprint := sha256.Sum256(x509.MarshalPKCS1PublicKey(publicKey))
+	return hex.EncodeToString(fingerprint[:])
+}
+			\end{lstlisting}
+			
+			As you can see it is quite a simple process.
+			
+			We simply encode the public key as a PKCS1 byte array, calculate a SHA256 hash of the bytes and then encode that SHA256 hash as a hexadecimal string. The resulting hexadecimal string is the fingerprint.
+			
+		\subsection{Key Management}
+			\subsubsection{Local User}
+				The local user's keys are held in files named private\_key.pem and name.pub.pem. They are generated by issuing the command \textbf{matador init} which generates and stores the keys in the current directory. Functionality in identity.go allows other parts of the program to retrieve the key data from the filesystem whenever required.
+				
+			\subsubsection{Friends/Recipients}
+				The program maintains a database of the public keys of as we will refer to them: "friends". Friends are user's with a public key on file who are authorized to view the messages we encrypt. The command \textbf{matador add}, \textbf{matador list} and \textbf{matador delete} allow the user to respectively add, list and delete friends from the database.
+				
+				The friends databse is maintained in a human/machine readable friends.json file. It contains an array of friend objects, each of which having a name assigned to it by the user, its fingerprint (which is used to refer to it if deletion is required) and the full public key which is used during message encryption.
+			
+	\newpage
+	
+	\section{Appendix: Code Listings}
+		Listings are optimized for PDF readability by limiting line length to 110 characters.
+		
+		\lstset{language=Go}
+		\subsection{main.go}
+			\lstinputlisting{../main.go}
+		\newpage
+		\subsection{identity.go}
+			\lstinputlisting{../identity.go}
+		\newpage
+		\subsection{friends.go}
+			\lstinputlisting{../friends.go}
+		\newpage
+		\subsection{message.go}
+			\lstinputlisting{../message.go}
+		\newpage
+		
+\end{document}
